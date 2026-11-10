@@ -1,6 +1,8 @@
 # Duely: the AI agent that gets freelancers paid
 
-**Tell it who to bill in plain English. Duely creates a real PayPal payment request, writes the message to your client, captures the money the moment they pay, auto-splits earnings with your collaborators through PayPal Payouts, and chases late payers for you. And because it speaks MCP, other AI agents can bill and pay through it too, with you approving every payout.**
+**Tell it who to bill in plain English. Duely creates a real PayPal payment request, writes the message to your client, captures the money the moment they pay, auto-splits earnings with your collaborators through PayPal Payouts, and chases late payers for you. And because it speaks MCP, other AI agents can bill and pay through it too, with you approving every payout.
+
+> **Judges:** the hosted demo runs on Render's free tier, so the first load after a quiet period can take about a minute while it wakes up.**
 
 Built for the *Build What's Next with PayPal and AI* hackathon.
 
@@ -18,18 +20,18 @@ Duely is an **agent** that runs that whole loop on PayPal. You give it intent; i
 
 ## What it does
 
-| | Feature | How it works |
-|---|---|---|
-| 💬 | **Chat-to-bill** | Gemini extracts client, line items, quantities, prices, currency, due dates ("Friday", "in 10 days"), phone and splits, then calls `create_payment_request` → a **PayPal Orders v2** order with itemized breakdown |
-| 🧾 | **Client pay page** | Every request gets a branded invoice page (`/pay/:id`) with a **Pay with PayPal** button; WhatsApp / email share buttons with a pre-written message |
-| ⚡ | **Auto-capture** | PayPal redirects the client back → Duely **captures** immediately. A background poller and **PayPal webhooks** (signature-verified) catch anything the redirect misses. Idempotent: safe under races |
-| ↗️ | **Auto-split payouts** | Revenue shares ("Priya gets 30%") are confirmed once at creation, then paid **automatically via PayPal Payouts** the instant the client's payment completes. Payout batch status is tracked to COMPLETED |
-| 🔔 | **AI payment chasing** | "Chase Acme" → the agent writes a personal reminder with amount, id and link, **escalating tone** (friendly → firm → final) based on history, with one-tap WhatsApp/email send |
-| ↩️ | **Refunds & payouts by chat** | "Refund $20 to Ravi, goodwill discount" → **PayPal Payments v2 refund** (full or partial). "Pay Sam $80" → Payouts |
-| 📊 | **Cash-flow insights** | "Who owes me money?" → outstanding, collected (net of refunds), overdue, top debtor, avg. days to pay |
-| 🔌 | **Agent-to-agent commerce (MCP)** | Duely is also an **MCP server**. Any AI agent (Claude Desktop, Cursor, your own) can bill clients, check payments, chase and request payouts through Duely + PayPal. Money-moving requests from outside agents land in your dashboard tagged "🤖 *agent name* via MCP" and wait for your Confirm |
-| ✋ | **Human-in-the-loop safety** | Tools that move money out (refunds, payouts, auto-splits) never execute directly. The agent creates a **pending action**; nothing happens until you press **Confirm** |
-| 🗂️ | **Live dashboard** | AG Grid table of every request, live stats, agent activity feed, and a toast when a client pays |
+| Feature | How it works |
+|---|---|
+| **Chat-to-bill** | Gemini extracts client, line items, quantities, prices, currency, due dates ("Friday", "in 10 days"), phone and splits, then calls `create_payment_request` → a **PayPal Orders v2** order with itemized breakdown |
+| **Client pay page** | Every request gets a branded invoice page (`/pay/:id`) with a **Pay with PayPal** button; WhatsApp / email share buttons with a pre-written message |
+| **Auto-capture** | PayPal redirects the client back → Duely **captures** immediately. A background poller and **PayPal webhooks** (signature-verified) catch anything the redirect misses. Idempotent: safe under races |
+| **Auto-split payouts** | Revenue shares ("Priya gets 30%") are confirmed once at creation, then paid **automatically via PayPal Payouts** the instant the client's payment completes. Payout batch status is tracked to COMPLETED |
+| **AI payment chasing** | "Chase Acme" → the agent writes a personal reminder with amount, id and link, **escalating tone** (friendly → firm → final) based on history, with one-tap WhatsApp/email send |
+| **Refunds & payouts by chat** | "Refund $20 to Ravi, goodwill discount" → **PayPal Payments v2 refund** (full or partial). "Pay Sam $80" → Payouts |
+| **Cash-flow insights** | "Who owes me money?" → outstanding, collected (net of refunds), overdue, top debtor, avg. days to pay |
+| **Agent-to-agent commerce (MCP)** | Duely is also an **MCP server**. Any AI agent (Claude Desktop, Cursor, your own) can bill clients, check payments, chase and request payouts through Duely + PayPal. Money-moving requests from outside agents land in your dashboard tagged with the agent's name and wait for your approval |
+| **Human-in-the-loop safety** | Tools that move money out (refunds, payouts, auto-splits) never execute directly. The agent creates a **pending action**; nothing happens until you press **Approve** |
+| **Live dashboard** | AG Grid table of every request, a plain-language summary of who owes you, an activity log, and a notification when a client pays |
 
 ## PayPal integration (sandbox)
 
@@ -60,14 +62,14 @@ PayPal's prompt asked for agents that *actually transact*, including *"a schedul
 ```
 Other AI agent ──MCP──▶ duely-mcp ──HTTP──▶ Duely ──▶ PayPal (Orders, Payouts, Refunds)
                                               │
-                                              └─▶ refunds/payouts/splits queued → owner presses Confirm
+                                              └─▶ refunds/payouts/splits queued → owner presses Approve
 ```
 
 **Try the built-in demo agent.** With `npm start` running, open a second terminal:
 ```bash
 npm run agent-demo
 ```
-"JobBoard", a separate Gemini-powered scheduling agent, marks a job complete, then over MCP **bills the client** (live PayPal order) and **requests a payout** to the subcontractor. Open the dashboard: the payout is waiting, tagged *🤖 JobBoard agent via MCP*.
+"JobBoard", a separate Gemini-powered scheduling agent, marks a job complete, then over MCP **bills the client** (live PayPal order) and **requests a payout** to the subcontractor. Open the dashboard: the payout is waiting for your approval, marked as requested by JobBoard agent.
 
 **Connect Claude Desktop (or any MCP client).** Add to `claude_desktop_config.json`:
 ```json
@@ -93,7 +95,7 @@ flowchart LR
   S <--> G[Gemini<br/>function calling]
   G -- tool calls --> T[Tools]
   T -- safe --> PP[(PayPal REST)]
-  T -- moves money --> C{Human<br/>Confirm}
+  T -- moves money --> C{Human<br/>approval}
   C --> PP
   CL[Client] -- pays --> PPC[PayPal Checkout]
   PPC -- return URL / webhook --> S
@@ -118,12 +120,12 @@ flowchart LR
    ```
 
 ### Try this script
-1. `Bill Ravi $450 for 3 landing pages at $150 each, due Friday. Priya (<sandbox personal email>) gets 30%.` → press **Confirm**
+1. `Bill Ravi $450 for 3 landing pages at $150 each, due Friday. Priya (<sandbox personal email>) gets 30%.` → press **Approve**
 2. Click **Open pay page** → **Pay with PayPal** → log in as the sandbox Personal account → Complete Purchase
 3. Back on the dashboard: Ravi is **Paid**, and the activity feed shows **Auto-split: sent $135.00 to Priya via PayPal Payouts**
 4. `Invoice Acme Corp for 12.5 hours of API work at $40/hr, due in 10 days. Their phone is +91 98765 43210`
 5. `Chase Acme Corp` → then `Chase them again, they ignored it` (watch the tone escalate)
-6. `Refund $20 to Ravi as a goodwill discount` → **Confirm**
+6. `Refund $20 to Ravi as a goodwill discount` → **Approve**
 7. `Who owes me money?`
 
 ## Tests
