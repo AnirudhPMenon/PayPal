@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: duely
+    runtime: node
+    plan: free
+    buildCommand: echo "no dependencies to install"
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: PAYPAL_MODE
+        value: sandbox
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: BUSINESS_NAME
+        value: Duely Studio

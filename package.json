@@ -1,0 +1,29 @@
+{
+  "name": "duely",
+  "version": "1.0.0",
+  "description": "AI agent that gets freelancers paid with PayPal: chat-to-bill, auto-capture, AI payment chasing, and auto-split payouts to collaborators.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --watch --env-file-if-exists=.env server.js",
+    "test": "node --test test/duely.test.mjs",
+    "smoke": "node --env-file-if-exists=.env scripts/smoke-test.mjs",
+    "mcp": "node mcp/duely-mcp.mjs",
+    "agent-demo": "node --env-file-if-exists=.env scripts/agent-to-agent-demo.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "paypal",
+    "ai",
+    "agent",
+    "agentic-commerce",
+    "payouts",
+    "invoicing",
+    "freelancers",
+    "mcp"
+  ],
+  "license": "MIT"
+}
