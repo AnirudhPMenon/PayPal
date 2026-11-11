@@ -49,7 +49,7 @@ Agents are only useful for money if they're grounded and guarded: grounded in li
 Auto-splitting retainer payments as PayPal bills them, dispute evidence drafting, scheduled auto-reminders, multi-user accounts, and publishing the MCP server so any freelancer's AI assistant can bill through PayPal.
 
 ## Built with
-paypal-agent-toolkit, paypal-orders-api, paypal-subscriptions, paypal-payouts, paypal-payments-refunds, paypal-disputes, paypal-webhooks, paypal-sandbox, gemini, google-ai-studio, function-calling, mcp, node.js, javascript, ag-grid, render
+paypal-agent-toolkit, paypal-orders-api, paypal-subscriptions, paypal-payouts, paypal-payments-refunds, paypal-disputes, paypal-webhooks, paypal-sandbox, gemini, gemini-tts, google-ai-studio, function-calling, mcp, node.js, javascript, ag-grid, render
 
 ## Tools used (AI and sponsor tools section)
 - **Google Gemini** (`gemini-flash-lite-latest`, with fallbacks) via the Gemini API: powers the Duely agent. It parses billing requests into structured PayPal orders, resolves dates, writes client messages and tone-escalating reminders, answers cash-flow questions, and decides which PayPal tool to call (function calling). It also powers the separate "JobBoard" demo agent that transacts through Duely over MCP.
@@ -57,4 +57,5 @@ paypal-agent-toolkit, paypal-orders-api, paypal-subscriptions, paypal-payouts, p
 - **Model Context Protocol (MCP):** Duely's MCP server exposes its PayPal tools to other AI agents.
 - **AG Grid Community:** the payment-requests table (sorting, filtering, quick search, custom status and action cells).
 - **Render:** hosting via the included `render.yaml` blueprint.
+- **Gemini text-to-speech** (`gemini-2.5-flash-preview-tts` and `gemini-3.8-flash-tts`, voice "Charon"): generated the demo video's narration (`scripts/make-voiceover.mjs`).
 - **Claude (Anthropic):** used as a coding assistant during development.
