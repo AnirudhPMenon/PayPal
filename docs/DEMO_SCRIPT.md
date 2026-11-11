@@ -1,4 +1,4 @@
-# Duely demo video script (target 2:45, hard limit 3:00)
+# Duely demo video script (target 2:50, hard limit 3:00)
 
 **Setup before recording**
 - `npm run dev` running; dashboard at http://localhost:3000, browser zoom ~110%, window full-screen.
@@ -38,15 +38,21 @@ Type: `Invoice Acme Corp for 12.5 hours of API work at $40/hr, due in 10 days. T
 Type: `Chase Acme Corp` → friendly reminder card. Then: `Chase them again, they ignored it` → **firm** card.
 > "When clients go quiet, Duely writes the reminder for me, and each one gets firmer. One tap sends it on WhatsApp with the pay link."
 
-### 1:55–2:30 · Agent-to-agent commerce (the differentiator)
+### 1:55–2:10 · Retainers with PayPal's Agent Toolkit
+Type: `Set up a $500 monthly retainer for Acme Corp for website care`
+> "For ongoing clients, Duely uses PayPal's official Agent Toolkit to set up a subscription. Acme approves once, and PayPal bills them every month."
+
+Show the retainer document and the new Retainers row (optionally approve it in the incognito window and show it turn **Active**; speed this up).
+
+### 2:10–2:35 · Agent-to-agent commerce (the differentiator)
 Switch to terminal: `npm run agent-demo`
 > "And here's what's next. Duely is also an MCP server, so other AI agents can use it. This is a separate scheduling agent. A job just got marked complete, so it bills the client and asks to pay the subcontractor, all through Duely and PayPal."
 
 Show the MCP calls scrolling. Switch to the dashboard: the new invoice and a **Approve payout** document marked "Requested by JobBoard agent over MCP". Press **Approve** → the payout is sent.
 > "Agents can transact, but a human still approves every payout."
 
-### 2:30–2:45 · Wrap
-Type: `Refund $20 to Ravi as a goodwill discount` → Approve (optional if time allows), then `Who owes me money?` → insights card.
-> "Bill, collect, split, chase, refund. All PayPal: Orders, Payouts, Refunds and webhooks. Gemini runs the agent, and it's open to other agents over MCP. That's Duely."
+### 2:35–2:50 · Wrap
+Type `Any open PayPal disputes?` (answered by PayPal's own list_disputes tool), then `Who owes me money?`.
+> "Bill, collect, split, chase, and run retainers. All on PayPal: Orders, Payouts, Refunds, Subscriptions through the official Agent Toolkit, and webhooks. Gemini runs the agent, and other agents can use it over MCP. That's Duely."
 
 End card: **Duely** · github link · "Built with PayPal + Gemini".

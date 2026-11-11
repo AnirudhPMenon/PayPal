@@ -1,7 +1,7 @@
 {
   "name": "duely",
   "version": "1.0.0",
-  "description": "AI agent that gets freelancers paid with PayPal: chat-to-bill, auto-capture, AI payment chasing, and auto-split payouts to collaborators.",
+  "description": "AI agent that gets freelancers paid with PayPal: chat-to-bill, auto-capture, auto-split payouts, AI payment chasing, retainers via the PayPal Agent Toolkit, and MCP for agent-to-agent commerce.",
   "type": "module",
   "main": "server.js",
   "scripts": {
@@ -10,7 +10,8 @@
     "test": "node --test test/duely.test.mjs",
     "smoke": "node --env-file-if-exists=.env scripts/smoke-test.mjs",
     "mcp": "node mcp/duely-mcp.mjs",
-    "agent-demo": "node --env-file-if-exists=.env scripts/agent-to-agent-demo.mjs"
+    "agent-demo": "node --env-file-if-exists=.env scripts/agent-to-agent-demo.mjs",
+    "probe": "node --env-file-if-exists=.env scripts/probe-toolkit.mjs"
   },
   "engines": {
     "node": ">=22"
@@ -23,7 +24,12 @@
     "payouts",
     "invoicing",
     "freelancers",
-    "mcp"
+    "mcp",
+    "paypal-agent-toolkit",
+    "subscriptions"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@paypal/agent-toolkit": "^1.11.0"
+  }
 }

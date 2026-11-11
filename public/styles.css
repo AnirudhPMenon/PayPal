@@ -44,6 +44,7 @@ a { color: var(--green); }
 .env::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 .env.off::before { background: var(--amber); }
 .business { color: var(--ink-2); font-weight: 500; }
+.toolkit:empty { display: none; }
 
 /* Layout */
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; height: calc(100vh - 52px); }
@@ -75,6 +76,20 @@ a { color: var(--green); }
 #quickFilter::placeholder { color: var(--muted); }
 .grid { width: 100%; }
 .grid .ag-center-cols-viewport { min-height: 120px; }
+
+.block-note { font-size: 12.5px; color: var(--muted); }
+table.plain { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+table.plain th { text-align: left; font-weight: 500; font-size: 13px; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+table.plain td { padding: 11px 14px; border-bottom: 1px solid var(--rule-soft); font-size: 13.5px; }
+table.plain tr:last-child td { border-bottom: 0; }
+table.plain td.num { text-align: right; white-space: nowrap; }
+table.plain .client { font-weight: 600; }
+.status.APPROVAL_PENDING { color: var(--amber); }
+.status.ACTIVE, .status.APPROVED { color: var(--green); }
+.status.CANCELLED, .status.EXPIRED { color: var(--muted); }
+.status.SUSPENDED { color: var(--brick); }
+.tool-note { font-size: 12.5px; color: var(--muted); padding-left: 10px; border-left: 2px solid var(--rule); }
+.activity .dot.retainer { background: var(--green); }
 
 /* Status labels in the table */
 .status { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; font-size: 13px; }

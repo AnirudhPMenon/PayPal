@@ -21,6 +21,8 @@ const md = (t) => esc(t)
 const STATUS = { awaiting_payment: "Awaiting", overdue: "Overdue", paid: "Paid", refunded: "Refunded", partially_refunded: "Partly refunded", cancelled: "Cancelled", pending_review: "In review" };
 const statusOf = (r) => (r.overdue ? "overdue" : r.status);
 const APPROVAL_TITLE = { create_payment_request: "Approve bill with revenue split", refund_payment: "Approve refund", send_payout: "Approve payout" };
+const RETAINER_STATUS = { APPROVAL_PENDING: "Waiting for client", APPROVED: "Approved", ACTIVE: "Active", SUSPENDED: "Suspended", CANCELLED: "Cancelled", EXPIRED: "Ended" };
+const per = (i) => ({ WEEK: "week", MONTH: "month", YEAR: "year" })[i] || "month";
 const SPLIT_STATE = { scheduled: "when the client pays", sent: "sent via PayPal Payouts", completed: "paid out", failed: "failed, will retry" };
 
 let state = null;
@@ -42,7 +44,7 @@ function apply(s) {
     knownStatus.set(r.id, r.status);
   }
   state = s;
-  renderTop(); renderSummary(); renderGrid(); renderFeed(); renderLog();
+  renderTop(); renderSummary(); renderGrid(); renderRetainers(); renderFeed(); renderLog();
 }
 
 // ---------- Top bar ----------
@@ -52,6 +54,7 @@ function renderTop() {
   env.textContent = c.paypalMode === "sandbox" ? "PayPal sandbox connected" : c.paypalMode === "live" ? "PayPal live" : "Offline test mode";
   env.classList.toggle("off", c.paypalMode !== "sandbox" && c.paypalMode !== "live");
   $("#business").textContent = c.businessName;
+  $("#toolkit").textContent = c.agentToolkit ? "PayPal Agent Toolkit enabled" : "";
   $("#aiInfo").textContent = c.provider === "none" ? "Add an AI key to .env to start" : "Bills, chases and pays through PayPal";
 }
 
@@ -71,7 +74,10 @@ function renderSummary() {
     fact("Collected", fmtMap(i.collected)) +
     fact("Overdue", i.counts.overdue ? `${i.counts.overdue} ${i.counts.overdue === 1 ? "request" : "requests"}` : "None", i.counts.overdue ? "warn" : "") +
     fact("Clients usually pay", days) +
-    fact("Paid to collaborators", fmtMap(i.splitsSentCents));
+    fact("Paid to collaborators", fmtMap(i.splitsSentCents)) +
+    (i.recurring && (i.recurring.active || i.recurring.pending)
+      ? fact("Recurring", i.recurring.active ? `${fmt(i.recurring.monthlyCents)} a month` : `${i.recurring.pending} waiting for approval`)
+      : "");
 }
 
 // ---------- Table ----------
@@ -126,6 +132,27 @@ function renderGrid() {
     : `<div class="empty-state">No payment requests yet. Ask the assistant to bill someone.</div>`;
 }
 
+// ---------- Retainers ----------
+function renderRetainers() {
+  const rs = state.retainers || [];
+  $("#retainersBlock").hidden = !rs.length;
+  if (!rs.length) return;
+  $("#retainers").innerHTML =
+    `<thead><tr><th>Client</th><th>Covers</th><th>Amount</th><th>Status</th><th>Next bill</th><th></th></tr></thead><tbody>` +
+    rs.map((r) => `<tr>
+      <td class="client">${esc(r.client.name)}</td>
+      <td>${esc(r.description)}</td>
+      <td class="num">${fmt(r.amountCents, r.currency)} per ${per(r.interval)}</td>
+      <td><span class="status ${r.status}">${RETAINER_STATUS[r.status] || esc(r.status)}</span></td>
+      <td>${r.nextBillingAt ? new Date(r.nextBillingAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "None"}</td>
+      <td class="row-actions">${r.status === "APPROVAL_PENDING" && r.approveLink ? `<button type="button" data-copy="${esc(r.approveLink)}">Copy link</button>` : ""}</td>
+    </tr>`).join("") + `</tbody>`;
+}
+$("#retainers").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-copy]");
+  if (b) { navigator.clipboard?.writeText(b.dataset.copy); toast("Subscription link copied"); }
+});
+
 // ---------- Activity ----------
 function renderFeed() {
   const ev = state.events.filter((e) => e.type !== "webhook").slice(0, 30);
@@ -136,7 +163,7 @@ function renderFeed() {
 
 // ---------- Assistant log ----------
 function renderLog(force) {
-  const key = state.chat.length + "|" + state.pendingActions.map((a) => a.id).join(",") + "|" + state.requests.map((r) => r.status).join(",") + "|" + busy;
+  const key = state.chat.length + "|" + state.pendingActions.map((a) => a.id).join(",") + "|" + state.requests.map((r) => r.status).join(",") + "|" + (state.retainers || []).map((r) => r.status).join(",") + "|" + busy;
   if (!force && key === lastChatKey) return;
   lastChatKey = key;
   const box = $("#messages");
@@ -211,6 +238,24 @@ function docHtml(c) {
       <div class="line"><span>${esc(p.email)}</span><span>${fmt(p.cents, p.currency)}</span></div>
       <div class="doc-meta">PayPal batch ${esc(p.batchId)}</div></div>`;
   }
+  if (c.type === "retainer") {
+    const r = (state.retainers || []).find((x) => x.id === c.retainer.id) || c.retainer;
+    const msg = `Hi ${r.client.name}, here's the link to set up your ${fmt(r.amountCents, r.currency)} per ${per(r.interval)} retainer for ${r.description}. Approve it once in PayPal and it's billed automatically: ${r.approveLink}`;
+    const waiting = r.status === "APPROVAL_PENDING";
+    return `<div class="doc">
+      <div class="doc-head"><span class="doc-title">Retainer ${esc(r.id)} for ${esc(r.client.name)}</span><span class="status ${r.status}">${RETAINER_STATUS[r.status] || esc(r.status)}</span></div>
+      <div class="line"><span>${esc(r.description)}</span><span>${fmt(r.amountCents, r.currency)} per ${per(r.interval)}</span></div>
+      <div class="doc-meta">PayPal subscription ${esc(r.subscriptionId)}, created with the PayPal Agent Toolkit</div>
+      ${waiting && r.approveLink ? `<div class="actions">
+        <a class="btn primary" href="${esc(r.approveLink)}" target="_blank" rel="noopener">Open subscription link</a>
+        <button class="btn" type="button" data-copy="${esc(r.approveLink)}">Copy link</button>
+        <a class="btn" href="mailto:${esc(r.client.email || "")}?subject=${encodeURIComponent("Your retainer")}&body=${encodeURIComponent(msg)}">Email</a>
+      </div>` : ""}
+    </div>`;
+  }
+  if (c.type === "toolkit") {
+    return `<div class="tool-note">${c.done ? "Done with" : "Checked with"} the PayPal Agent Toolkit: ${esc(c.tool.replace(/_/g, " "))}</div>`;
+  }
   if (c.type === "insights") {
     const i = c.insights;
     return `<div class="doc">
@@ -257,6 +302,8 @@ function renderSuggestions() {
     if (unpaid) list.push(`Chase ${unpaid.client.name}`);
     list.push("Who owes me money?");
     if (paid) list.push(`Refund $20 to ${paid.client.name} as a goodwill discount`);
+    if (state.config.agentToolkit && !(state.retainers || []).length) list.unshift("Set up a $500 monthly retainer for Acme Corp for website care");
+    else if (state.config.agentToolkit) list.push("Any open PayPal disputes?");
   }
   box.innerHTML = list.slice(0, 3).map((t) => `<button type="button">${esc(t)}</button>`).join("");
   box.querySelectorAll("button").forEach((b) => (b.onclick = () => { $("#input").value = b.textContent; $("#input").focus(); }));

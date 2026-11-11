@@ -2,6 +2,7 @@
 // Run: npm run smoke
 import { createPayPal } from "../lib/paypal.js";
 import { createAgent } from "../lib/agent.js";
+import { createOfficialToolkit } from "../lib/toolkit.js";
 
 const env = process.env;
 const ok = (m) => console.log("  ✓ " + m);
@@ -50,7 +51,20 @@ if (env.RECIPIENT_EMAIL) {
   }
 } else console.log("  – Skipping payout test (set RECIPIENT_EMAIL to a sandbox personal account email)");
 
-// 4. AI provider with tool calling
+// 4. PayPal Agent Toolkit (official tools)
+const toolkit = createOfficialToolkit({ mode: "sandbox", clientId: env.PAYPAL_CLIENT_ID, clientSecret: env.PAYPAL_CLIENT_SECRET, log: () => {} });
+if (!toolkit) {
+  bad("PayPal Agent Toolkit not available: run npm install"); failed++;
+} else {
+  try {
+    await toolkit.call("list_disputes", {});
+    ok(`PayPal Agent Toolkit v${toolkit.version} works (list_disputes), ${toolkit.agentTools().length} official tools offered to the agent`);
+  } catch (e) {
+    bad("Agent Toolkit: " + e.message); failed++;
+  }
+}
+
+// 5. AI provider with tool calling
 const agent = createAgent(env);
 if (agent.provider === "none") {
   bad("No AI key: add GEMINI_API_KEY (or ANTHROPIC_API_KEY / OPENAI_API_KEY) to .env"); failed++;

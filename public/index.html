@@ -19,6 +19,7 @@
     </a>
     <div class="topbar-right">
       <span class="env" id="env"></span>
+      <span class="toolkit" id="toolkit"></span>
       <span class="business" id="business"></span>
     </div>
   </header>
@@ -36,6 +37,11 @@
           <input id="quickFilter" type="search" placeholder="Search clients or IDs" aria-label="Search payment requests" />
         </div>
         <div id="grid" class="grid"></div>
+      </section>
+
+      <section class="block" id="retainersBlock" hidden>
+        <div class="block-head"><h2>Retainers</h2><span class="block-note">Recurring billing through PayPal Subscriptions</span></div>
+        <table class="plain" id="retainers"></table>
       </section>
 
       <section class="block">
