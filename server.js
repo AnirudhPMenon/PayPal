@@ -17,6 +17,8 @@ const config = {
   defaultCurrency: (env.DEFAULT_CURRENCY || "USD").toUpperCase(),
   webhookId: env.PAYPAL_WEBHOOK_ID || "",
   apiKey: env.DUELY_API_KEY || "",
+  localUrl: `http://127.0.0.1:${PORT}`,
+  demoPayoutEmail: env.DEMO_PAYOUT_EMAIL || env.RECIPIENT_EMAIL || "",
 };
 
 const db = createDb(env.DB_FILE || path.join(process.cwd(), "data", "db.json"));

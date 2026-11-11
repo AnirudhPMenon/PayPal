@@ -368,3 +368,36 @@ test("toolkit parsing: double-encoded JSON and PayPal's ok:false errors", () => 
   );
   assert.throws(() => parseToolkitResult({ content: [{ text: JSON.stringify({ error: { message: "not supported in sandbox mode", type: "paypal_error" } }) }] }), /sandbox/);
 });
+
+test("Agents page: JobBoard agent settles a job over MCP and the stream reports each step", async () => {
+  const { app, db } = setup(async () => "unused");
+  const srv = await serve(app);
+  // The JobBoard agent is a separate agent; script it to bill the client and pay the subcontractor.
+  const cfgAgent = createAgent({}, {
+    provider: "scripted",
+    run: async ({ execute }) => {
+      const bill = await execute("create_payment_request", { client_name: "Ravi Kumar", items: [{ name: "Fix checkout bug", quantity: 3, unit_price: 50 }] });
+      assert.equal(bill.ok, true);
+      const pay = await execute("send_payout", { name: "Sam", email: "sam@example.com", amount: 75 });
+      assert.equal(pay.status, "awaiting_user_confirmation");
+      return `Billed Ravi. Payout to Sam is waiting for approval: ${bill.share_link}`;
+    },
+  });
+  // Point the route at this test server and the scripted JobBoard agent.
+  const appConfig = { localUrl: srv.base, jobBoardAgent: cfgAgent };
+  Object.assign(app.__config || {}, appConfig);
+  try {
+    const page = await fetch(srv.base + "/agents").then((r) => r.text());
+    assert.match(page, /Run JobBoard agent/);
+    const res = await fetch(srv.base + "/api/agent-demo/stream?task=" + encodeURIComponent("Job 42 done"));
+    const body = await res.text();
+    const events = body.split("\n\n").filter(Boolean).map((l) => JSON.parse(l.replace(/^data: /, "")));
+    assert.deepEqual(events.map((e) => e.type), ["connected", "call", "result", "call", "result", "done"]);
+    assert.equal(events[4].status, "awaiting_user_confirmation");
+    const st = app.state();
+    assert.equal(st.requests[0].client.name, "Ravi Kumar");
+    assert.equal(st.pendingActions[0].requestedBy, "JobBoard agent");
+  } finally {
+    srv.close();
+  }
+});

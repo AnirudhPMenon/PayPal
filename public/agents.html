@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Agents · Duely</title>
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .agents { max-width: 760px; margin: 0 auto; padding: 44px 24px 64px; }
+    .agents h1 { font-size: clamp(26px, 3vw, 34px); line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; max-width: 26ch; }
+    .agents .lede { color: var(--ink-2); margin-top: 12px; max-width: 62ch; font-size: 15px; }
+    .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 22px 0 28px; font-size: 13.5px; color: var(--ink-2); }
+    .flow span.node { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 5px 10px; font-weight: 500; color: var(--ink); }
+    .flow span.arrow { color: var(--muted); }
+    label.task { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+    #task { width: 100%; min-height: 92px; resize: vertical; border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; background: var(--surface); line-height: 1.5; }
+    #task:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--green-tint); }
+    .run-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+    #run { height: 40px; padding: 0 18px; border: 0; border-radius: 8px; background: var(--green); color: #fff; font-weight: 600; cursor: pointer; }
+    #run:disabled { opacity: 0.55; cursor: default; }
+    .run-row .hint { font-size: 13px; color: var(--muted); }
+    .steps { list-style: none; margin: 28px 0 0; padding: 0; border-top: 1px solid var(--rule); }
+    .steps li { padding: 12px 0; border-bottom: 1px solid var(--rule-soft); display: grid; grid-template-columns: 110px 1fr; gap: 14px; }
+    .steps .k { font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+    .steps .v { overflow-wrap: anywhere; }
+    .steps code { font-family: inherit; font-weight: 600; }
+    .steps .args { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); white-space: pre-wrap; }
+    .steps .ok { color: var(--green); font-weight: 500; }
+    .steps .wait { color: var(--amber); font-weight: 500; }
+    .steps .err { color: var(--brick); font-weight: 500; }
+    .final { margin-top: 22px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; white-space: pre-wrap; }
+    .final a { color: var(--green); }
+    .next { margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="/" aria-label="Duely home">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect width="22" height="22" rx="5" fill="#1E5A47"/><path d="M6.5 11.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Duely
+    </a>
+    <div class="topbar-right"><a href="/" class="business">Back to dashboard</a></div>
+  </header>
+
+  <main class="agents">
+    <h1>Let another AI agent settle a job through Duely.</h1>
+    <p class="lede">JobBoard is a separate scheduling agent. When a job is marked complete, it connects to Duely over MCP, bills the client with a real PayPal order, and asks to pay the subcontractor. Duely holds the payout until you approve it.</p>
+
+    <div class="flow" aria-label="How it connects">
+      <span class="node">JobBoard agent</span><span class="arrow">MCP</span>
+      <span class="node">Duely</span><span class="arrow">REST and Agent Toolkit</span>
+      <span class="node">PayPal</span>
+    </div>
+
+    <label class="task" for="task">Job to settle</label>
+    <textarea id="task"></textarea>
+    <div class="run-row">
+      <button id="run" type="button">Run JobBoard agent</button>
+      <span class="hint" id="hint">Takes about 15 seconds.</span>
+    </div>
+
+    <ol class="steps" id="steps" hidden></ol>
+    <div id="final"></div>
+  </main>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    const link = (t) => esc(t).replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    const LABEL = { create_payment_request: "Bill the client", send_payout: "Pay the subcontractor", check_payment_status: "Check a payment", list_payment_requests: "List payment requests", save_reminder: "Save a reminder", get_insights: "Check cash flow", create_retainer: "Set up a retainer" };
+
+    fetch("/api/agent-demo").then((r) => r.json()).then((d) => { $("#task").value = d.task; });
+
+    function add(k, v) {
+      $("#steps").hidden = false;
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="k">${k}</span><span class="v">${v}</span>`;
+      $("#steps").appendChild(li);
+      return li;
+    }
+
+    $("#run").onclick = () => {
+      $("#steps").innerHTML = ""; $("#final").innerHTML = "";
+      $("#run").disabled = true; $("#hint").textContent = "Running…";
+      const es = new EventSource("/api/agent-demo/stream?task=" + encodeURIComponent($("#task").value));
+      let pendingLi = null;
+      es.onmessage = (ev) => {
+        const e = JSON.parse(ev.data);
+        if (e.type === "connected") add("Connected", `JobBoard connected to Duely over MCP and found ${e.tools} tools.`);
+        if (e.type === "call") pendingLi = add("MCP call", `<code>${esc(e.tool)}</code>, ${esc(LABEL[e.tool] || "")}<span class="args">${esc(JSON.stringify(e.args, null, 1))}</span>`);
+        if (e.type === "result" && pendingLi) {
+          const cls = e.error ? "err" : e.status === "awaiting_user_confirmation" ? "wait" : "ok";
+          const txt = e.error ? `Error: ${esc(e.error)}` : e.status === "awaiting_user_confirmation" ? "Held for your approval in Duely" : "Done";
+          pendingLi.querySelector(".v").insertAdjacentHTML("beforeend", `<span class="args"><span class="${cls}">${txt}</span></span>`);
+        }
+        if (e.type === "done") {
+          $("#final").innerHTML = `<div class="final"><strong>JobBoard agent:</strong> ${link(e.text)}</div>
+            <p class="next"><a class="btn primary" href="/">Open the dashboard to approve the payout</a></p>`;
+        }
+        if (e.type === "error") add("Error", `<span class="err">${esc(e.message)}</span>`);
+        if (e.type === "done" || e.type === "error") finish();
+      };
+      es.onerror = () => finish();
+      function finish() { es.close(); $("#run").disabled = false; $("#hint").textContent = "Takes about 15 seconds."; }
+    };
+  </script>
+</body>
+</html>

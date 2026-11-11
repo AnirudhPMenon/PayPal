@@ -174,7 +174,7 @@ function renderLog(force) {
         <li>I create a pay link and write the message for your client.</li>
         <li>When they pay, collaborators get their share through PayPal Payouts.</li>
         <li>If they don't, I write reminders that get firmer each time.</li>
-        <li>Other AI agents can bill and pay through me too. You approve every payout.</li>
+        <li>Other AI agents can bill and pay through me too. You approve every payout. <a href="/agents">Try it with the JobBoard agent</a>.</li>
       </ul></div>`;
   } else {
     box.innerHTML = state.chat.map(turnHtml).join("");
